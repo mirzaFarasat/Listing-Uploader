@@ -10,14 +10,14 @@ export default function Dashboard() {
   const [fileId, setFileId] = useState<string>("");
 
   const handleUpload = async () => {
-    if (!session?.accessToken) {
+    if (!(session as any)?.accessToken) {
       setStatus("You must be logged in.");
       return;
     }
 
     try {
       setStatus("Uploading...");
-      const response = await uploadProductFromDrive(session.accessToken, fileId);
+      const response = await uploadProductFromDrive((session as any).accessToken, fileId);
       setStatus(`Product uploaded! Listing ID: ${response.listing_id}`);
     } catch (error) {
       setStatus("Failed to upload product.");

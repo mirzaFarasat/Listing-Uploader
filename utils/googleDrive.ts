@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { ProductData } from "@/types/products";
+import { ProductData } from "@/app/types/products";
 
 const drive = google.drive({
   version: "v3",

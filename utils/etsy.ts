@@ -1,6 +1,7 @@
+"use server"
 import axios from "axios";
 import { fetchProductDataFromDrive } from "./googleDrive";
-import { ProductData } from "@/types/products";
+import { ProductData } from "@/app/types/products";
 
 export const uploadProductFromDrive = async (accessToken: string, fileId: string) => {
   try {
