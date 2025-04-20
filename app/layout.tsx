@@ -1,5 +1,4 @@
 "use client"
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -27,11 +26,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
-        <SessionProvider>
-          {children}
-        </SessionProvider>
+        {/* <nav className="bg-[#23232a] shadow-xl border border-gray-800 text-white px-4 py-3 flex items-center justify-center">
+          <div className="font-bold text-lg tracking-wide">Listing Uploader</div>
+        </nav> */}
+        <main className="h-full overflow-hidden bg-[#18181b]">
+          <SessionProvider>
+            {children}
+          </SessionProvider>
+        </main>
       </body>
     </html>
   );
