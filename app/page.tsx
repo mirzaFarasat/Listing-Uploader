@@ -281,13 +281,15 @@ export default function Uploader() {
                 </table>
                 <div className="sticky left-0 bottom-0 w-full bg-[#23232a] px-3 py-2 flex justify-between items-center">
                     <div className="flex items-center gap-3 text-sm text-gray-400">
-                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => signOut()}>
+                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => signOut()}
+                            disabled={googleButtonLoading || etsyButtonLoading}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="inline-block mr-2" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
                             </svg>
                             Sign out
                         </button>
-                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => setSheetData(prev => prev.filter(item => item.status !== "listed"))}>
+                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => setSheetData(prev => prev.filter(item => item.status !== "listed"))}
+                            disabled={googleButtonLoading || etsyButtonLoading}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="inline-block mr-2" width="20" height="20" fill="none" viewBox="0 0 20 20" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l8 8M6 14L14 6" />
                             </svg>
