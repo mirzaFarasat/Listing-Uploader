@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import useDrivePicker from "react-google-drive-picker";
@@ -74,7 +74,10 @@ export default function Uploader() {
     const [sheetData, setSheetData] = useState<(Product & {
         status: 'not_listed' | 'listing' | 'listed' | 'listing_failed'
     })[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [googleSignInInProgress, setGoogleSignInInProgress] = useState<boolean>(false);
+    const [etsySignInInProgress, setEtsySignInInProgress] = useState<boolean>(false);
+    const [sheetDataLoading, setSheetDataLoading] = useState<boolean>(false);
+    const [listingInProgress, setListingInProgress] = useState<boolean>(false);
     const [toast, setToast] = useState<string>("");
 
     const sessionLoading = status === "loading";
@@ -111,7 +114,7 @@ export default function Uploader() {
             callbackFunction(data) {
                 if (data.action !== "picked") return;
 
-                setLoading(true);
+                setSheetDataLoading(true);
                 fetch("/api/fetchSheetData", {
                     method: "POST",
                     body: JSON.stringify({
@@ -128,7 +131,7 @@ export default function Uploader() {
                                 .map(product => ({ ...product, status: 'not_listed' }))
                             );
 
-                        setLoading(false);
+                        setSheetDataLoading(false);
                     });
             },
         });
@@ -138,76 +141,87 @@ export default function Uploader() {
         if (!etsyAccessToken) return;
         if (!sheetData.length) return;
 
-        setLoading(true);
+        setListingInProgress(true);
         const headers = new Headers();
         headers.append("Authorization", `Bearer ${etsyAccessToken}`);
-        const productsToUpload = sheetData.filter(p => p.status !== 'listed');
 
-        setSheetData(productsToUpload.map(p => ({
+        setSheetData(sheetData.map(p => (p.status === 'listed'? p : {
             ...p,
             status: 'listing'
         })));
-        const listedProducts = await Promise.all(productsToUpload.map(p => (
-            // fetch("/api/uploadEtsyProduct", {
-            //     method: "POST",
-            //     headers,
-            //     body: JSON.stringify(p)
-            // }).then(res => res.json())
-            //    .then(data => {
-            //         if (data.error) {
-            //             setToast(data.error);
-            //             return {
-            //                 ...p,
-            //                 status: 'listing_failed'
-            //             };
-            //         } else {
-            //             return {
-            //                 ...p,
-            //                 status: 'listed'
-            //             };
-            //         }
-            //     })
-            new Promise(resolve => {
-                setTimeout(() => {
-                    resolve({
-                        ...p,
-                        status: 'listed'
-                    });
-                }, 1000);
-            })
+        const listedProducts = await Promise.all(sheetData.map(p => (
+            p.status === 'listed'? p :
+                fetch("/api/uploadEtsyProduct", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(p)
+                }).then(res => res.json())
+                .then(data => {
+                        if (data.error) {
+                            setToast(data.error);
+                            return {
+                                ...p,
+                                status: 'listing_failed'
+                            };
+                        } else {
+                            return {
+                                ...p,
+                                status: 'listed'
+                            };
+                        }
+                    }
+                )
+                // new Promise(resolve => {
+                //     setTimeout(() => {
+                //         resolve({
+                //             ...p,
+                //             status: 'listed'
+                //         });
+                //     }, 1000);
+                // })
         )));
 
         setSheetData(listedProducts as typeof sheetData);
-        setLoading(false);
+        setListingInProgress(false);
     };
+
+    const googleButtonLoading = sessionLoading || googleSignInInProgress || sheetDataLoading;
+    const googleButtonDisabled = etsySignInInProgress || listingInProgress;
+    const etsyButtonLoading = sessionLoading || etsySignInInProgress || listingInProgress;
+    const etsyButtonDisabled = googleSignInInProgress || sheetDataLoading;
 
     return (
         <div className="h-full px-8 py-6 flex flex-col gap-4">
             {toast && <Toast message={toast} onClose={() => setToast("")} />}
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-100">List Products</h1>
+                <h1
+                    className="text-3xl font-bold bg-gradient-to-r from-gray-600 via-zinc-500 to-stone-500 bg-clip-text text-transparent"
+                    style={{ letterSpacing: '0.03em' }}
+                >
+                    Etsy Lister
+                </h1>
                 <button
-                    onClick={(sessionLoading || loading) ? undefined :
+                    onClick={(googleButtonLoading || googleButtonDisabled) ? undefined :
                         googleAccessToken ? openDrivePicker :
                             async () => {
-                                setLoading(true);
+                                setGoogleSignInInProgress(true);
                                 await signIn("google")
                             }
                     }
-                    disabled={(sessionLoading || loading)}
+                    disabled={(googleButtonDisabled)}
                     className={`
                         flex items-center w-72 px-4 py-2
                         rounded-xl border border-gray-700 shadow-sm
-                        transition-colors bg-[#26272b]
-                        ${(sessionLoading || loading) ? 'cursor-default' : 'hover:bg-[#31323a]'}
-                        text-md text-gray-100 text-left
+                        transition-colors bg-[#26272b] disabled:bg-zinc-900
+                        ${(googleButtonLoading || googleButtonDisabled) ? 'cursor-default' : 'hover:bg-[#31323a]'}
+                        text-md text-gray-100 text-left disabled:opacity-50
                     `.trim()}
                 >
                     <Image src={googleDriveIcon} alt="Google Drive" width={20} className="mr-3 h-auto" />
                     <span className="flex-1">
                         {googleAccessToken ? "Select from Google Drive" : "Connect to Google Drive"}
                     </span>
-                    {(sessionLoading || loading) && <Spinner />}
+                    {googleButtonLoading && <Spinner />}
                 </button>
             </div>
             <div className="overflow-auto thin-scrollbar rounded-lg border border-gray-700">
@@ -239,7 +253,7 @@ export default function Uploader() {
                                 <td className={`p-4 bg-[#18181b] even:bg-[#1c1c21] sticky right-0
                                     ${row.status === 'listed'? 'text-green-500' :
                                         row.status === 'listing_failed'? 'text-red-500' :
-                                        row.status === 'listing'? 'text-yellow-500' : 'text-gray-400'
+                                        'text-gray-400'
                                     }`}>
                                     {row.status === 'listed' ? 'Listed' :
                                         row.status === 'listing_failed'? 'Listing failed' :
@@ -265,19 +279,35 @@ export default function Uploader() {
                         )}
                     </tbody>
                 </table>
-                <div className="sticky left-0 bottom-0 w-full bg-[#23232a] px-2 py-2 flex justify-end">
+                <div className="sticky left-0 bottom-0 w-full bg-[#23232a] px-3 py-2 flex justify-between items-center">
+                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => signOut()}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="inline-block mr-2" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+                            </svg>
+                            Sign out
+                        </button>
+                        <button className="px-3 py-2 rounded-lg border border-gray-700" onClick={() => setSheetData(prev => prev.filter(item => item.status !== "listed"))}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="inline-block mr-2" width="20" height="20" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l8 8M6 14L14 6" />
+                            </svg>
+                            Clear listed
+                        </button>
+                    </div>
                     <button
-                        onClick={(sessionLoading || loading) ? undefined :
+                        onClick={(etsyButtonLoading || etsyButtonDisabled) ? undefined :
                             etsyAccessToken ? handleUploadToEtsy :
                                 async () => {
-                                    setLoading(true);
+                                    setEtsySignInInProgress(true);
                                     await signIn("etsy");
                                 }
                         }
+                        disabled={etsyButtonDisabled}
                         className={`
                             flex items-center w-72 px-4 py-2
                             rounded-xl border border-gray-700
-                            ${(sessionLoading || loading) ? 'cursor-default' : 'hover:bg-[#31323a]'}
+                            disabled:bg-zinc-900 disabled:opacity-50
+                            ${(etsyButtonLoading || etsyButtonDisabled) ? 'cursor-default' : 'hover:bg-[#31323a]'}
                             text-md text-gray-100 text-left
                         `.trim()}
                     >
@@ -285,7 +315,7 @@ export default function Uploader() {
                         <span className="flex-1">
                             {etsyAccessToken ? "Upload to Etsy" : "Sign in to Etsy"}
                         </span>
-                        {(sessionLoading || loading) && <Spinner />}
+                        {etsyButtonLoading && <Spinner />}
                     </button>
                 </div>
             </div>
