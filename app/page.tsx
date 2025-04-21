@@ -236,14 +236,18 @@ export default function Uploader() {
                                         {row[c.key]}
                                     </td>
                                 )}
-                                <td className="p-4 bg-[#18181b] even:bg-[#1c1c21] sticky right-0">
+                                <td className={`p-4 bg-[#18181b] even:bg-[#1c1c21] sticky right-0
+                                    ${row.status === 'listed'? 'text-green-500' :
+                                        row.status === 'listing_failed'? 'text-red-500' :
+                                        row.status === 'listing'? 'text-yellow-500' : 'text-gray-400'
+                                    }`}>
                                     {row.status === 'listed' ? 'Listed' :
                                         row.status === 'listing_failed'? 'Listing failed' :
                                         row.status === 'listing'? <Spinner /> : 'Not listed'
                                     }
                                 </td>
                             </tr>
-                        )):  (
+                        )) : (
                             <tr>
                                 <td colSpan={columns.length + 2}>
                                     <div className="flex flex-col items-center justify-center h-80 text-gray-400">
