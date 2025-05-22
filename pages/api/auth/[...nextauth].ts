@@ -46,12 +46,7 @@ export const authOptions: AuthOptions = {
   providers: [
     EtsyProvider({
       clientId: process.env.ETSY_CLIENT_ID!,
-      clientSecret: process.env.ETSY_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "listings_r listings_w transactions_r",
-        },
-      },
+      clientSecret: process.env.ETSY_CLIENT_SECRET!
     }),
     GoogleProvider({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,

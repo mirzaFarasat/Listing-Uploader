@@ -69,7 +69,7 @@ const columns: {
 export default function Uploader() {
     const { data: session, update: updateSession, status } = useSession();
     const googleAccessToken = session?.google?.accessToken;
-    const etsyAccessToken = session?.etsy?.accessToken || "etsyToken";
+    const etsyAccessToken = session?.etsy?.accessToken;
     const [openPicker] = useDrivePicker();
     const [sheetData, setSheetData] = useState<(Product & {
         status: 'not_listed' | 'listing' | 'listed' | 'listing_failed'
